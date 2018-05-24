@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1>Favourites list</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for favourite in favourites %}
+            <tr>
+                <td><a href="{{ path('favourite_show', { 'id': favourite.id }) }}">{{ favourite.id }}</a></td>
+                <td>
+                    <ul>
+                        <li>
+                            <a href="{{ path('favourite_show', { 'id': favourite.id }) }}">show</a>
+                        </li>
+                        <li>
+                            <a href="{{ path('favourite_edit', { 'id': favourite.id }) }}">edit</a>
+                        </li>
+                    </ul>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <ul>
+        <li>
+            <a href="{{ path('favourite_new') }}">Create a new favourite</a>
+        </li>
+    </ul>
+{% endblock %}

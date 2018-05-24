@@ -1,3 +1,42 @@
+francoin_user:
+    resource: "@FrancoinBundle/Controller/UserController.php"
+    type:     annotation
+
+francoin_region:
+    resource: "@FrancoinBundle/Controller/RegionController.php"
+    type:     annotation
+
+francoin_post:
+    resource: "@FrancoinBundle/Controller/PostController.php"
+    type:     annotation
+
+francoin_image:
+    resource: "@FrancoinBundle/Controller/ImageController.php"
+    type:     annotation
+
+francoin_favourite:
+    resource: "@FrancoinBundle/Controller/FavouriteController.php"
+    type:     annotation
+
+francoin_comment:
+    resource: "@FrancoinBundle/Controller/CommentController.php"
+    type:     annotation
+
+francoin_city:
+    resource: "@FrancoinBundle/Controller/CityController.php"
+    type:     annotation
+
+francoin_category:
+    resource: "@FrancoinBundle/Controller/CategoryController.php"
+    type:     annotation
+
+francoin_attribute:
+    resource: "@FrancoinBundle/Controller/AttributeController.php"
+    type:     annotation
+
 francoin:
     resource: "@FrancoinBundle/Resources/config/routing.yml"
     prefix:   /
+    
+fos_user:
+    resource: "@FOSUserBundle/Resources/config/routing/all.xml"

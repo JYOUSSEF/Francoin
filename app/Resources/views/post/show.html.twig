@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <h1>Post</h1>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ post.id }}</td>
+            </tr>
+            <tr>
+                <th>Type</th>
+                <td>{{ post.type }}</td>
+            </tr>
+            <tr>
+                <th>Title</th>
+                <td>{{ post.title }}</td>
+            </tr>
+            <tr>
+                <th>Content</th>
+                <td>{{ post.content }}</td>
+            </tr>
+            <tr>
+                <th>Price</th>
+                <td>{{ post.price }}</td>
+            </tr>
+            <tr>
+                <th>Createddate</th>
+                <td>{% if post.createdDate %}{{ post.createdDate|date('Y-m-d') }}{% endif %}</td>
+            </tr>
+            <tr>
+                <th>Publisheddate</th>
+                <td>{% if post.publishedDate %}{{ post.publishedDate|date('Y-m-d') }}{% endif %}</td>
+            </tr>
+            <tr>
+                <th>Updateddate</th>
+                <td>{% if post.updatedDate %}{{ post.updatedDate|date('Y-m-d') }}{% endif %}</td>
+            </tr>
+            <tr>
+                <th>Expirationdate</th>
+                <td>{% if post.expirationDate %}{{ post.expirationDate|date('Y-m-d') }}{% endif %}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <ul>
+        <li>
+            <a href="{{ path('post_index') }}">Back to the list</a>
+        </li>
+        <li>
+            <a href="{{ path('post_edit', { 'id': post.id }) }}">Edit</a>
+        </li>
+        <li>
+            {{ form_start(delete_form) }}
+                <input type="submit" value="Delete">
+            {{ form_end(delete_form) }}
+        </li>
+    </ul>
+{% endblock %}
