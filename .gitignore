@@ -1,0 +1,6 @@
+vendor/
+var/
+bin/
+web/js
+web/css
+app/check.php
