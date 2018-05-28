@@ -1,1 +1,1 @@
-Francoin est une web application des petites annonces.
+Francoin est une Web Application des petites annonces en France
