@@ -1,1 +1,10 @@
-Francoin est une webapplication des petites annonces.
+## Description :
+Francoin est une Web Application des petites annonces en France.
+
+## Stack Technique :
+Symfony : 3.4
+
+FOSUserBundle
+
+
+

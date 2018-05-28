@@ -1,0 +1,3 @@
+francoin_homepage:
+    path:     /
+    defaults: { _controller: FrancoinBundle:Default:index }
