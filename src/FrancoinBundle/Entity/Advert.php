@@ -12,6 +12,36 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Advert
 {
+
+    /**
+     * @ORM\OneToMany(targetEntity="FrancoinBundle\Entity\Favorite", mappedBy="advert")
+     */
+
+    private $favorites;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="FrancoinBundle\Entity\UserFran", inversedBy="advert")
+     */
+
+    private $annonceurs;
+
+    /**
+     * @ORM\OneToMany(targetEntity="FrancoinBundle\Entity\Picture", mappedBy="advert")
+     */
+
+    private $pictures;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="FrancoinBundle\Entity\Category", inversedBy="advert")
+     * @ORM\JoinColumn(nullable=false)
+     */
+
+    private $categories;
+
+    /**
+     * @ORM\OneToMany(targetEntity="FrancoinBundle\Entity\Comment", mappedBy="advert")
+     */
+    private $comments;
     /**
      * @var int
      *
@@ -57,10 +87,21 @@ class Advert
     private $publishedAt;
 
 
+
+    /**
+     * Constructor
+     */
+    public function __construct()
+    {
+        $this->favorites = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->pictures = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->comments = new \Doctrine\Common\Collections\ArrayCollection();
+    }
+
     /**
      * Get id
      *
-     * @return int
+     * @return integer
      */
     public function getId()
     {
@@ -186,5 +227,154 @@ class Advert
     {
         return $this->publishedAt;
     }
-}
 
+    /**
+     * Add favorite
+     *
+     * @param \FrancoinBundle\Entity\Favorite $favorite
+     *
+     * @return Advert
+     */
+    public function addFavorite(\FrancoinBundle\Entity\Favorite $favorite)
+    {
+        $this->favorites[] = $favorite;
+
+        return $this;
+    }
+
+    /**
+     * Remove favorite
+     *
+     * @param \FrancoinBundle\Entity\Favorite $favorite
+     */
+    public function removeFavorite(\FrancoinBundle\Entity\Favorite $favorite)
+    {
+        $this->favorites->removeElement($favorite);
+    }
+
+    /**
+     * Get favorites
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getFavorites()
+    {
+        return $this->favorites;
+    }
+
+    /**
+     * Set annonceurs
+     *
+     * @param \FrancoinBundle\Entity\UserFran $annonceurs
+     *
+     * @return Advert
+     */
+    public function setAnnonceurs(\FrancoinBundle\Entity\UserFran $annonceurs = null)
+    {
+        $this->annonceurs = $annonceurs;
+
+        return $this;
+    }
+
+    /**
+     * Get annonceurs
+     *
+     * @return \FrancoinBundle\Entity\UserFran
+     */
+    public function getAnnonceurs()
+    {
+        return $this->annonceurs;
+    }
+
+    /**
+     * Add picture
+     *
+     * @param \FrancoinBundle\Entity\Picture $picture
+     *
+     * @return Advert
+     */
+    public function addPicture(\FrancoinBundle\Entity\Picture $picture)
+    {
+        $this->pictures[] = $picture;
+
+        return $this;
+    }
+
+    /**
+     * Remove picture
+     *
+     * @param \FrancoinBundle\Entity\Picture $picture
+     */
+    public function removePicture(\FrancoinBundle\Entity\Picture $picture)
+    {
+        $this->pictures->removeElement($picture);
+    }
+
+    /**
+     * Get pictures
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getPictures()
+    {
+        return $this->pictures;
+    }
+
+    /**
+     * Set categories
+     *
+     * @param \FrancoinBundle\Entity\Category $categories
+     *
+     * @return Advert
+     */
+    public function setCategories(\FrancoinBundle\Entity\Category $categories)
+    {
+        $this->categories = $categories;
+
+        return $this;
+    }
+
+    /**
+     * Get categories
+     *
+     * @return \FrancoinBundle\Entity\Category
+     */
+    public function getCategories()
+    {
+        return $this->categories;
+    }
+
+    /**
+     * Add comment
+     *
+     * @param \FrancoinBundle\Entity\Comment $comment
+     *
+     * @return Advert
+     */
+    public function addComment(\FrancoinBundle\Entity\Comment $comment)
+    {
+        $this->comments[] = $comment;
+
+        return $this;
+    }
+
+    /**
+     * Remove comment
+     *
+     * @param \FrancoinBundle\Entity\Comment $comment
+     */
+    public function removeComment(\FrancoinBundle\Entity\Comment $comment)
+    {
+        $this->comments->removeElement($comment);
+    }
+
+    /**
+     * Get comments
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getComments()
+    {
+        return $this->comments;
+    }
+}

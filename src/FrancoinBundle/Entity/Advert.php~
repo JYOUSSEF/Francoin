@@ -1,0 +1,91 @@
+<?php
+
+namespace FrancoinBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * Advert
+ *
+ * @ORM\Table(name="advert")
+ * @ORM\Entity(repositoryClass="FrancoinBundle\Repository\AdvertRepository")
+ */
+class Advert
+{
+
+    /**
+     * @ORM\OneToMany(targetEntity="FrancoinBundle\Entity\Favorite", mappedBy="advert")
+     */
+
+    private $favorites;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="FrancoinBundle\Entity\UserFran", inversedBy="advert")
+     */
+
+    private $annonceurs;
+
+    /**
+     * @ORM\OneToMany(targetEntity="FrancoinBundle\Entity\Picture", mappedBy="advert")
+     */
+
+    private $pictures;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="FrancoinBundle\Entity\Category", inversedBy="advert")
+     * @ORM\JoinColumn(nullable=false)
+     */
+
+    private $categories;
+
+    /**
+     * @ORM\OneToMany(targetEntity="FrancoinBundle\Entity\Comment", mappedBy="advert")
+     */
+    private $comments;
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="AUTO")
+     */
+    private $id;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="title", type="string", length=255)
+     */
+    private $title;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="content", type="string", length=255)
+     */
+    private $content;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="created_at", type="datetime")
+     */
+    private $createdAt;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="updated_at", type="datetime", nullable=true)
+     */
+    private $updatedAt;
+
+    /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="published_at", type="datetime", nullable=true)
+     */
+    private $publishedAt;
+
+
+
+}

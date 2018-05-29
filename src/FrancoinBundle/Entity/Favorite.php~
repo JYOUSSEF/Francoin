@@ -1,0 +1,40 @@
+<?php
+
+namespace FrancoinBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * Favorite
+ *
+ * @ORM\Table(name="favorite")
+ * @ORM\Entity(repositoryClass="FrancoinBundle\Repository\FavoriteRepository")
+ */
+class Favorite
+{
+
+    /**
+     * @ORM\ManyToOne(targetEntity="FrancoinBundle\Entity\Advert",inversedBy="favorites")
+     * @ORM\JoinColumn(nullable=false)
+     */
+
+    private $advert;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="FrancoinBundle\Entity\UserFran", inversedBy="favorites")
+     * @ORM\JoinColumn(nullable=false)
+     */
+
+    private $userfran;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="AUTO")
+     */
+    private $id;
+
+
+}
