@@ -65,28 +65,6 @@ class User extends BaseUser
      */
     protected $phone;
 
-    /* *
-     * @var string
-     *
-     * @ORM\Column(name="email", type="string", length=60, nullable=false)
-     * /
-    protected $email;
-
-    /* *
-     * @var string
-     *
-     * @ORM\Column(name="username", type="string", length=25, nullable=false)
-     * /
-    protected $username;
-
-    /* *
-     * @var string
-     *
-     * @ORM\Column(name="password", type="string", length=25, nullable=false)
-     * /
-    protected $password;
-    */
-
     /**
      * @var \FrancoinBundle\Entity\City
      *
@@ -107,7 +85,15 @@ class User extends BaseUser
      */
     protected $region;
 
-
+    /**
+     * Get id
+     *
+     * @return integer
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
 
     /**
      * Set firstname
