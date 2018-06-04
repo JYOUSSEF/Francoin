@@ -40,3 +40,8 @@ francoin:
     
 fos_user:
     resource: "@FOSUserBundle/Resources/config/routing/all.xml"
+
+api:
+    resource: "@FrancoinBundle/Resources/config/routing.yml"
+    type: rest
+    prefix: /api

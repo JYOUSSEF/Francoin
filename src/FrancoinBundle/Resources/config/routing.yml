@@ -1,3 +1,7 @@
 francoin_homepage:
     path:     /
     defaults: { _controller: FrancoinBundle:Default:index }
+
+api_users:
+    resource: "@FrancoinBundle/Controller/UserRestController.php"
+    type:     rest
