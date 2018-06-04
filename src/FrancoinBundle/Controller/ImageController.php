@@ -3,134 +3,113 @@
 namespace FrancoinBundle\Controller;
 
 use FrancoinBundle\Entity\Image;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;use Symfony\Component\HttpFoundation\Request;
+use FrancoinBundle\Form\ImageType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use FOS\RestBundle\Controller\Annotations as Rest;
+use FrancoinBundle\Controller\RestController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use FOS\RestBundle\View\View;
 
-/**
- * Image controller.
- *
- * @Route("image")
- */
-class ImageController extends Controller
+class ImageController extends RestController
 {
     /**
-     * Lists all image entities.
+     * @Rest\Get("/image", name="_image")
      *
-     * @Route("/", name="image_index")
-     * @Method("GET")
+     * @return View
      */
     public function indexAction()
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $images = $em->getRepository('FrancoinBundle:Image')->findAll();
-
-        return $this->render('image/index.html.twig', array(
-            'images' => $images,
-        ));
+        $entities = $this->getDoctrine()->getRepository('FrancoinBundle:Image')->findAll();
+        if ($entities === null) {
+            return new View("there are no Images exist", Response::HTTP_NOT_FOUND);
+        }
+        return new View($entities, Response::HTTP_OK);
     }
 
     /**
-     * Creates a new image entity.
+     * @Rest\Get("/image/{id}", name="_image")
      *
-     * @Route("/new", name="image_new")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function newAction(Request $request)
+    public function getAction(Image $entity = null)
     {
-        $image = new Image();
-        $form = $this->createForm('FrancoinBundle\Form\ImageType', $image);
-        $form->handleRequest($request);
+        return ($entity) ? new View($entity, Response::HTTP_OK) : new View("Error : Image doesn't exist", Response::HTTP_NOT_FOUND);
+    }
 
-        if ($form->isSubmitted() && $form->isValid()) {
+    /**
+     * @Rest\Post("/image/new", name="_image")
+     *
+     * @return View
+     */
+    public function postAction(Request $request)
+    {
+        try {
+            $entity = new Image();
+            $form = $this->createForm(get_class(new ImageType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em = $this->getDoctrine()->getManager();
+                $em->persist($entity);
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+        } catch (Exception $e) {
+            return new View($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return new View("Error : Failed to add a new image", Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * @Rest\Put("/image/{id}", name="_image")
+     *
+     * @return View
+     */
+    public function putAction(Request $request, Image $entity)
+    {
+       try {
             $em = $this->getDoctrine()->getManager();
-            $em->persist($image);
-            $em->flush();
-
-            return $this->redirectToRoute('image_show', array('id' => $image->getId()));
+            $id = $entity->getId();
+            $request->setMethod('PATCH');
+            $form = $this->createForm(get_class(new ImageType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+            return new View("Error : Failed to edit the image " . $id , Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (\Exception $e) {
+            return new View("Error : Image doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->render('image/new.html.twig', array(
-            'image' => $image,
-            'form' => $form->createView(),
-        ));
     }
 
     /**
-     * Finds and displays a image entity.
+     * @Rest\Patch("/image/{id}", name="_image")
      *
-     * @Route("/{id}", name="image_show")
-     * @Method("GET")
+     * @return View
      */
-    public function showAction(Image $image)
+    public function patchAction(Request $request, Image $entity)
     {
-        $deleteForm = $this->createDeleteForm($image);
-
-        return $this->render('image/show.html.twig', array(
-            'image' => $image,
-            'delete_form' => $deleteForm->createView(),
-        ));
+       return $this->putAction($request, $entity);
     }
 
     /**
-     * Displays a form to edit an existing image entity.
+     * @Rest\Delete("/image/{id}", name="_image")
      *
-     * @Route("/{id}/edit", name="image_edit")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function editAction(Request $request, Image $image)
+    public function deleteAction(Image $entity = null)
     {
-        $deleteForm = $this->createDeleteForm($image);
-        $editForm = $this->createForm('FrancoinBundle\Form\ImageType', $image);
-        $editForm->handleRequest($request);
-
-        if ($editForm->isSubmitted() && $editForm->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
-
-            return $this->redirectToRoute('image_edit', array('id' => $image->getId()));
-        }
-
-        return $this->render('image/edit.html.twig', array(
-            'image' => $image,
-            'edit_form' => $editForm->createView(),
-            'delete_form' => $deleteForm->createView(),
-        ));
-    }
-
-    /**
-     * Deletes a image entity.
-     *
-     * @Route("/{id}", name="image_delete")
-     * @Method("DELETE")
-     */
-    public function deleteAction(Request $request, Image $image)
-    {
-        $form = $this->createDeleteForm($image);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($entity) {
+            $id = $entity->getId();
             $em = $this->getDoctrine()->getManager();
-            $em->remove($image);
+            $em->remove($entity);
             $em->flush();
+            return new View("Image " . $id . " has been deleted", Response::HTTP_OK);
+        } else {
+            return new View("Error : Image doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->redirectToRoute('image_index');
-    }
-
-    /**
-     * Creates a form to delete a image entity.
-     *
-     * @param Image $image The image entity
-     *
-     * @return \Symfony\Component\Form\Form The form
-     */
-    private function createDeleteForm(Image $image)
-    {
-        return $this->createFormBuilder()
-            ->setAction($this->generateUrl('image_delete', array('id' => $image->getId())))
-            ->setMethod('DELETE')
-            ->getForm()
-        ;
     }
 }

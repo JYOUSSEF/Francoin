@@ -3,134 +3,113 @@
 namespace FrancoinBundle\Controller;
 
 use FrancoinBundle\Entity\Favourite;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;use Symfony\Component\HttpFoundation\Request;
+use FrancoinBundle\Form\FavouriteType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use FOS\RestBundle\Controller\Annotations as Rest;
+use FrancoinBundle\Controller\RestController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use FOS\RestBundle\View\View;
 
-/**
- * Favourite controller.
- *
- * @Route("favourite")
- */
-class FavouriteController extends Controller
+class FavouriteController extends RestController
 {
     /**
-     * Lists all favourite entities.
+     * @Rest\Get("/favourite", name="_favourite")
      *
-     * @Route("/", name="favourite_index")
-     * @Method("GET")
+     * @return View
      */
     public function indexAction()
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $favourites = $em->getRepository('FrancoinBundle:Favourite')->findAll();
-
-        return $this->render('favourite/index.html.twig', array(
-            'favourites' => $favourites,
-        ));
+        $entities = $this->getDoctrine()->getRepository('FrancoinBundle:Favourite')->findAll();
+        if ($entities === null) {
+            return new View("there are no Favourites exist", Response::HTTP_NOT_FOUND);
+        }
+        return new View($entities, Response::HTTP_OK);
     }
 
     /**
-     * Creates a new favourite entity.
+     * @Rest\Get("/favourite/{id}", name="_favourite")
      *
-     * @Route("/new", name="favourite_new")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function newAction(Request $request)
+    public function getAction(Favourite $entity = null)
     {
-        $favourite = new Favourite();
-        $form = $this->createForm('FrancoinBundle\Form\FavouriteType', $favourite);
-        $form->handleRequest($request);
+        return ($entity) ? new View($entity, Response::HTTP_OK) : new View("Error : Favourite doesn't exist", Response::HTTP_NOT_FOUND);
+    }
 
-        if ($form->isSubmitted() && $form->isValid()) {
+    /**
+     * @Rest\Post("/favourite/new", name="_favourite")
+     *
+     * @return View
+     */
+    public function postAction(Request $request)
+    {
+        try {
+            $entity = new Favourite();
+            $form = $this->createForm(get_class(new FavouriteType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em = $this->getDoctrine()->getManager();
+                $em->persist($entity);
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+        } catch (Exception $e) {
+            return new View($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return new View("Error : Failed to add a new favourite", Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * @Rest\Put("/favourite/{id}", name="_favourite")
+     *
+     * @return View
+     */
+    public function putAction(Request $request, Favourite $entity)
+    {
+       try {
             $em = $this->getDoctrine()->getManager();
-            $em->persist($favourite);
-            $em->flush();
-
-            return $this->redirectToRoute('favourite_show', array('id' => $favourite->getId()));
+            $id = $entity->getId();
+            $request->setMethod('PATCH');
+            $form = $this->createForm(get_class(new FavouriteType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+            return new View("Error : Failed to edit the favourite " . $id , Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (\Exception $e) {
+            return new View("Error : Favourite doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->render('favourite/new.html.twig', array(
-            'favourite' => $favourite,
-            'form' => $form->createView(),
-        ));
     }
 
     /**
-     * Finds and displays a favourite entity.
+     * @Rest\Patch("/favourite/{id}", name="_favourite")
      *
-     * @Route("/{id}", name="favourite_show")
-     * @Method("GET")
+     * @return View
      */
-    public function showAction(Favourite $favourite)
+    public function patchAction(Request $request, Favourite $entity)
     {
-        $deleteForm = $this->createDeleteForm($favourite);
-
-        return $this->render('favourite/show.html.twig', array(
-            'favourite' => $favourite,
-            'delete_form' => $deleteForm->createView(),
-        ));
+       return $this->putAction($request, $entity);
     }
 
     /**
-     * Displays a form to edit an existing favourite entity.
+     * @Rest\Delete("/favourite/{id}", name="_favourite")
      *
-     * @Route("/{id}/edit", name="favourite_edit")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function editAction(Request $request, Favourite $favourite)
+    public function deleteAction(Favourite $entity = null)
     {
-        $deleteForm = $this->createDeleteForm($favourite);
-        $editForm = $this->createForm('FrancoinBundle\Form\FavouriteType', $favourite);
-        $editForm->handleRequest($request);
-
-        if ($editForm->isSubmitted() && $editForm->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
-
-            return $this->redirectToRoute('favourite_edit', array('id' => $favourite->getId()));
-        }
-
-        return $this->render('favourite/edit.html.twig', array(
-            'favourite' => $favourite,
-            'edit_form' => $editForm->createView(),
-            'delete_form' => $deleteForm->createView(),
-        ));
-    }
-
-    /**
-     * Deletes a favourite entity.
-     *
-     * @Route("/{id}", name="favourite_delete")
-     * @Method("DELETE")
-     */
-    public function deleteAction(Request $request, Favourite $favourite)
-    {
-        $form = $this->createDeleteForm($favourite);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($entity) {
+            $id = $entity->getId();
             $em = $this->getDoctrine()->getManager();
-            $em->remove($favourite);
+            $em->remove($entity);
             $em->flush();
+            return new View("Favourite " . $id . " has been deleted", Response::HTTP_OK);
+        } else {
+            return new View("Error : Favourite doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->redirectToRoute('favourite_index');
-    }
-
-    /**
-     * Creates a form to delete a favourite entity.
-     *
-     * @param Favourite $favourite The favourite entity
-     *
-     * @return \Symfony\Component\Form\Form The form
-     */
-    private function createDeleteForm(Favourite $favourite)
-    {
-        return $this->createFormBuilder()
-            ->setAction($this->generateUrl('favourite_delete', array('id' => $favourite->getId())))
-            ->setMethod('DELETE')
-            ->getForm()
-        ;
     }
 }
