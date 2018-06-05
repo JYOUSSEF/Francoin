@@ -3,134 +3,113 @@
 namespace FrancoinBundle\Controller;
 
 use FrancoinBundle\Entity\Region;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;use Symfony\Component\HttpFoundation\Request;
+use FrancoinBundle\Form\RegionType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use FOS\RestBundle\Controller\Annotations as Rest;
+use FrancoinBundle\Controller\RestController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use FOS\RestBundle\View\View;
 
-/**
- * Region controller.
- *
- * @Route("region")
- */
-class RegionController extends Controller
+class RegionController extends RestController
 {
     /**
-     * Lists all region entities.
+     * @Rest\Get("/region", name="_region")
      *
-     * @Route("/", name="region_index")
-     * @Method("GET")
+     * @return View
      */
     public function indexAction()
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $regions = $em->getRepository('FrancoinBundle:Region')->findAll();
-
-        return $this->render('region/index.html.twig', array(
-            'regions' => $regions,
-        ));
+        $entities = $this->getDoctrine()->getRepository('FrancoinBundle:Region')->findAll();
+        if ($entities === null) {
+            return new View("there are no Regions exist", Response::HTTP_NOT_FOUND);
+        }
+        return new View($entities, Response::HTTP_OK);
     }
 
     /**
-     * Creates a new region entity.
+     * @Rest\Get("/region/{id}", name="_region")
      *
-     * @Route("/new", name="region_new")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function newAction(Request $request)
+    public function getAction(Region $entity = null)
     {
-        $region = new Region();
-        $form = $this->createForm('FrancoinBundle\Form\RegionType', $region);
-        $form->handleRequest($request);
+        return ($entity) ? new View($entity, Response::HTTP_OK) : new View("Error : Region doesn't exist", Response::HTTP_NOT_FOUND);
+    }
 
-        if ($form->isSubmitted() && $form->isValid()) {
+    /**
+     * @Rest\Post("/region/new", name="_region")
+     *
+     * @return View
+     */
+    public function postAction(Request $request)
+    {
+        try {
+            $entity = new Region();
+            $form = $this->createForm(get_class(new RegionType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em = $this->getDoctrine()->getManager();
+                $em->persist($entity);
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+        } catch (Exception $e) {
+            return new View($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return new View("Error : Failed to add a new region", Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * @Rest\Put("/region/{id}", name="_region")
+     *
+     * @return View
+     */
+    public function putAction(Request $request, Region $entity)
+    {
+       try {
             $em = $this->getDoctrine()->getManager();
-            $em->persist($region);
-            $em->flush();
-
-            return $this->redirectToRoute('region_show', array('id' => $region->getId()));
+            $id = $entity->getId();
+            $request->setMethod('PATCH');
+            $form = $this->createForm(get_class(new RegionType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+            return new View("Error : Failed to edit the region " . $id , Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (\Exception $e) {
+            return new View("Error : Region doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->render('region/new.html.twig', array(
-            'region' => $region,
-            'form' => $form->createView(),
-        ));
     }
 
     /**
-     * Finds and displays a region entity.
+     * @Rest\Patch("/region/{id}", name="_region")
      *
-     * @Route("/{id}", name="region_show")
-     * @Method("GET")
+     * @return View
      */
-    public function showAction(Region $region)
+    public function patchAction(Request $request, Region $entity)
     {
-        $deleteForm = $this->createDeleteForm($region);
-
-        return $this->render('region/show.html.twig', array(
-            'region' => $region,
-            'delete_form' => $deleteForm->createView(),
-        ));
+       return $this->putAction($request, $entity);
     }
 
     /**
-     * Displays a form to edit an existing region entity.
+     * @Rest\Delete("/region/{id}", name="_region")
      *
-     * @Route("/{id}/edit", name="region_edit")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function editAction(Request $request, Region $region)
+    public function deleteAction(Region $entity = null)
     {
-        $deleteForm = $this->createDeleteForm($region);
-        $editForm = $this->createForm('FrancoinBundle\Form\RegionType', $region);
-        $editForm->handleRequest($request);
-
-        if ($editForm->isSubmitted() && $editForm->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
-
-            return $this->redirectToRoute('region_edit', array('id' => $region->getId()));
-        }
-
-        return $this->render('region/edit.html.twig', array(
-            'region' => $region,
-            'edit_form' => $editForm->createView(),
-            'delete_form' => $deleteForm->createView(),
-        ));
-    }
-
-    /**
-     * Deletes a region entity.
-     *
-     * @Route("/{id}", name="region_delete")
-     * @Method("DELETE")
-     */
-    public function deleteAction(Request $request, Region $region)
-    {
-        $form = $this->createDeleteForm($region);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($entity) {
+            $id = $entity->getId();
             $em = $this->getDoctrine()->getManager();
-            $em->remove($region);
+            $em->remove($entity);
             $em->flush();
+            return new View("Region " . $id . " has been deleted", Response::HTTP_OK);
+        } else {
+            return new View("Error : Region doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->redirectToRoute('region_index');
-    }
-
-    /**
-     * Creates a form to delete a region entity.
-     *
-     * @param Region $region The region entity
-     *
-     * @return \Symfony\Component\Form\Form The form
-     */
-    private function createDeleteForm(Region $region)
-    {
-        return $this->createFormBuilder()
-            ->setAction($this->generateUrl('region_delete', array('id' => $region->getId())))
-            ->setMethod('DELETE')
-            ->getForm()
-        ;
     }
 }

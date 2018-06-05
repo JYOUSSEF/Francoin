@@ -3,134 +3,113 @@
 namespace FrancoinBundle\Controller;
 
 use FrancoinBundle\Entity\Attribute;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;use Symfony\Component\HttpFoundation\Request;
+use FrancoinBundle\Form\AttributeType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use FOS\RestBundle\Controller\Annotations as Rest;
+use FrancoinBundle\Controller\RestController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use FOS\RestBundle\View\View;
 
-/**
- * Attribute controller.
- *
- * @Route("attribute")
- */
-class AttributeController extends Controller
+class AttributeController extends RestController
 {
     /**
-     * Lists all attribute entities.
+     * @Rest\Get("/attribute", name="_attribute")
      *
-     * @Route("/", name="attribute_index")
-     * @Method("GET")
+     * @return View
      */
     public function indexAction()
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $attributes = $em->getRepository('FrancoinBundle:Attribute')->findAll();
-
-        return $this->render('attribute/index.html.twig', array(
-            'attributes' => $attributes,
-        ));
+        $entities = $this->getDoctrine()->getRepository('FrancoinBundle:Attribute')->findAll();
+        if ($entities === null) {
+            return new View("there are no Attributes exist", Response::HTTP_NOT_FOUND);
+        }
+        return new View($entities, Response::HTTP_OK);
     }
 
     /**
-     * Creates a new attribute entity.
+     * @Rest\Get("/attribute/{id}", name="_attribute")
      *
-     * @Route("/new", name="attribute_new")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function newAction(Request $request)
+    public function getAction(Attribute $entity = null)
     {
-        $attribute = new Attribute();
-        $form = $this->createForm('FrancoinBundle\Form\AttributeType', $attribute);
-        $form->handleRequest($request);
+        return ($entity) ? new View($entity, Response::HTTP_OK) : new View("Error : Attribute doesn't exist", Response::HTTP_NOT_FOUND);
+    }
 
-        if ($form->isSubmitted() && $form->isValid()) {
+    /**
+     * @Rest\Post("/attribute/new", name="_attribute")
+     *
+     * @return View
+     */
+    public function postAction(Request $request)
+    {
+        try {
+            $entity = new Attribute();
+            $form = $this->createForm(get_class(new AttributeType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em = $this->getDoctrine()->getManager();
+                $em->persist($entity);
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+        } catch (Exception $e) {
+            return new View($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return new View("Error : Failed to add a new attribute", Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * @Rest\Put("/attribute/{id}", name="_attribute")
+     *
+     * @return View
+     */
+    public function putAction(Request $request, Attribute $entity)
+    {
+       try {
             $em = $this->getDoctrine()->getManager();
-            $em->persist($attribute);
-            $em->flush();
-
-            return $this->redirectToRoute('attribute_show', array('id' => $attribute->getId()));
+            $id = $entity->getId();
+            $request->setMethod('PATCH');
+            $form = $this->createForm(get_class(new AttributeType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+            return new View("Error : Failed to edit the attribute " . $id , Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (\Exception $e) {
+            return new View("Error : Attribute doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->render('attribute/new.html.twig', array(
-            'attribute' => $attribute,
-            'form' => $form->createView(),
-        ));
     }
 
     /**
-     * Finds and displays a attribute entity.
+     * @Rest\Patch("/attribute/{id}", name="_attribute")
      *
-     * @Route("/{id}", name="attribute_show")
-     * @Method("GET")
+     * @return View
      */
-    public function showAction(Attribute $attribute)
+    public function patchAction(Request $request, Attribute $entity)
     {
-        $deleteForm = $this->createDeleteForm($attribute);
-
-        return $this->render('attribute/show.html.twig', array(
-            'attribute' => $attribute,
-            'delete_form' => $deleteForm->createView(),
-        ));
+       return $this->putAction($request, $entity);
     }
 
     /**
-     * Displays a form to edit an existing attribute entity.
+     * @Rest\Delete("/attribute/{id}", name="_attribute")
      *
-     * @Route("/{id}/edit", name="attribute_edit")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function editAction(Request $request, Attribute $attribute)
+    public function deleteAction(Attribute $entity = null)
     {
-        $deleteForm = $this->createDeleteForm($attribute);
-        $editForm = $this->createForm('FrancoinBundle\Form\AttributeType', $attribute);
-        $editForm->handleRequest($request);
-
-        if ($editForm->isSubmitted() && $editForm->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
-
-            return $this->redirectToRoute('attribute_edit', array('id' => $attribute->getId()));
-        }
-
-        return $this->render('attribute/edit.html.twig', array(
-            'attribute' => $attribute,
-            'edit_form' => $editForm->createView(),
-            'delete_form' => $deleteForm->createView(),
-        ));
-    }
-
-    /**
-     * Deletes a attribute entity.
-     *
-     * @Route("/{id}", name="attribute_delete")
-     * @Method("DELETE")
-     */
-    public function deleteAction(Request $request, Attribute $attribute)
-    {
-        $form = $this->createDeleteForm($attribute);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($entity) {
+            $id = $entity->getId();
             $em = $this->getDoctrine()->getManager();
-            $em->remove($attribute);
+            $em->remove($entity);
             $em->flush();
+            return new View("Attribute " . $id . " has been deleted", Response::HTTP_OK);
+        } else {
+            return new View("Error : Attribute doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->redirectToRoute('attribute_index');
-    }
-
-    /**
-     * Creates a form to delete a attribute entity.
-     *
-     * @param Attribute $attribute The attribute entity
-     *
-     * @return \Symfony\Component\Form\Form The form
-     */
-    private function createDeleteForm(Attribute $attribute)
-    {
-        return $this->createFormBuilder()
-            ->setAction($this->generateUrl('attribute_delete', array('id' => $attribute->getId())))
-            ->setMethod('DELETE')
-            ->getForm()
-        ;
     }
 }

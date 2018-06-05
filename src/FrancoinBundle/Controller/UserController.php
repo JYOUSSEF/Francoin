@@ -3,134 +3,113 @@
 namespace FrancoinBundle\Controller;
 
 use FrancoinBundle\Entity\User;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;use Symfony\Component\HttpFoundation\Request;
+use FrancoinBundle\Form\UserType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use FOS\RestBundle\Controller\Annotations as Rest;
+use FrancoinBundle\Controller\RestController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use FOS\RestBundle\View\View;
 
-/**
- * User controller.
- *
- * @Route("user")
- */
-class UserController extends Controller
+class UserController extends RestController
 {
     /**
-     * Lists all user entities.
+     * @Rest\Get("/user", name="_user")
      *
-     * @Route("/", name="user_index")
-     * @Method("GET")
+     * @return View
      */
     public function indexAction()
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $users = $em->getRepository('FrancoinBundle:User')->findAll();
-
-        return $this->render('user/index.html.twig', array(
-            'users' => $users,
-        ));
+        $entities = $this->getDoctrine()->getRepository('FrancoinBundle:User')->findAll();
+        if ($entities === null) {
+            return new View("there are no users exist", Response::HTTP_NOT_FOUND);
+        }
+        return new View($entities, Response::HTTP_OK);
     }
 
     /**
-     * Creates a new user entity.
+     * @Rest\Get("/user/{id}", name="_user")
      *
-     * @Route("/new", name="user_new")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function newAction(Request $request)
+    public function getAction(User $entity = null)
     {
-        $user = new User();
-        $form = $this->createForm('FrancoinBundle\Form\UserType', $user);
-        $form->handleRequest($request);
+        return ($entity) ? new View($entity, Response::HTTP_OK) : new View("Error : User doesn't exist", Response::HTTP_NOT_FOUND);
+    }
 
-        if ($form->isSubmitted() && $form->isValid()) {
+    /**
+     * @Rest\Post("/user/new", name="_user")
+     *
+     * @return View
+     */
+    public function postAction(Request $request)
+    {
+        try {
+            $entity = new User();
+            $form = $this->createForm(get_class(new UserType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em = $this->getDoctrine()->getManager();
+                $em->persist($entity);
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+        } catch (Exception $e) {
+            return new View($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return new View("Error : Failed to add a new user", Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * @Rest\Put("/user/{id}", name="_user")
+     *
+     * @return View
+     */
+    public function putAction(Request $request, User $entity)
+    {
+       try {
             $em = $this->getDoctrine()->getManager();
-            $em->persist($user);
-            $em->flush();
-
-            return $this->redirectToRoute('user_show', array('id' => $user->getId()));
+            $id = $entity->getId();
+            $request->setMethod('PATCH');
+            $form = $this->createForm(get_class(new UserType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+            return new View("Error : Failed to edit the user " . $id , Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (\Exception $e) {
+            return new View("Error : User doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->render('user/new.html.twig', array(
-            'user' => $user,
-            'form' => $form->createView(),
-        ));
     }
 
     /**
-     * Finds and displays a user entity.
+     * @Rest\Patch("/user/{id}", name="_user")
      *
-     * @Route("/{id}", name="user_show")
-     * @Method("GET")
+     * @return View
      */
-    public function showAction(User $user)
+    public function patchAction(Request $request, User $entity)
     {
-        $deleteForm = $this->createDeleteForm($user);
-
-        return $this->render('user/show.html.twig', array(
-            'user' => $user,
-            'delete_form' => $deleteForm->createView(),
-        ));
+       return $this->putAction($request, $entity);
     }
 
     /**
-     * Displays a form to edit an existing user entity.
+     * @Rest\Delete("/user/{id}", name="_user")
      *
-     * @Route("/{id}/edit", name="user_edit")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function editAction(Request $request, User $user)
+    public function deleteAction(User $entity = null)
     {
-        $deleteForm = $this->createDeleteForm($user);
-        $editForm = $this->createForm('FrancoinBundle\Form\UserType', $user);
-        $editForm->handleRequest($request);
-
-        if ($editForm->isSubmitted() && $editForm->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
-
-            return $this->redirectToRoute('user_edit', array('id' => $user->getId()));
-        }
-
-        return $this->render('user/edit.html.twig', array(
-            'user' => $user,
-            'edit_form' => $editForm->createView(),
-            'delete_form' => $deleteForm->createView(),
-        ));
-    }
-
-    /**
-     * Deletes a user entity.
-     *
-     * @Route("/{id}", name="user_delete")
-     * @Method("DELETE")
-     */
-    public function deleteAction(Request $request, User $user)
-    {
-        $form = $this->createDeleteForm($user);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($entity) {
+            $id = $entity->getId();
             $em = $this->getDoctrine()->getManager();
-            $em->remove($user);
+            $em->remove($entity);
             $em->flush();
+            return new View("User " . $id . " has been deleted", Response::HTTP_OK);
+        } else {
+            return new View("Error : User doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->redirectToRoute('user_index');
-    }
-
-    /**
-     * Creates a form to delete a user entity.
-     *
-     * @param User $user The user entity
-     *
-     * @return \Symfony\Component\Form\Form The form
-     */
-    private function createDeleteForm(User $user)
-    {
-        return $this->createFormBuilder()
-            ->setAction($this->generateUrl('user_delete', array('id' => $user->getId())))
-            ->setMethod('DELETE')
-            ->getForm()
-        ;
     }
 }

@@ -3,134 +3,113 @@
 namespace FrancoinBundle\Controller;
 
 use FrancoinBundle\Entity\City;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;use Symfony\Component\HttpFoundation\Request;
+use FrancoinBundle\Form\CityType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use FOS\RestBundle\Controller\Annotations as Rest;
+use FrancoinBundle\Controller\RestController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use FOS\RestBundle\View\View;
 
-/**
- * City controller.
- *
- * @Route("city")
- */
-class CityController extends Controller
+class CityController extends RestController
 {
     /**
-     * Lists all city entities.
+     * @Rest\Get("/city", name="_city")
      *
-     * @Route("/", name="city_index")
-     * @Method("GET")
+     * @return View
      */
     public function indexAction()
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $cities = $em->getRepository('FrancoinBundle:City')->findAll();
-
-        return $this->render('city/index.html.twig', array(
-            'cities' => $cities,
-        ));
+        $entities = $this->getDoctrine()->getRepository('FrancoinBundle:City')->findAll();
+        if ($entities === null) {
+            return new View("there are no Citys exist", Response::HTTP_NOT_FOUND);
+        }
+        return new View($entities, Response::HTTP_OK);
     }
 
     /**
-     * Creates a new city entity.
+     * @Rest\Get("/city/{id}", name="_city")
      *
-     * @Route("/new", name="city_new")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function newAction(Request $request)
+    public function getAction(City $entity = null)
     {
-        $city = new City();
-        $form = $this->createForm('FrancoinBundle\Form\CityType', $city);
-        $form->handleRequest($request);
+        return ($entity) ? new View($entity, Response::HTTP_OK) : new View("Error : City doesn't exist", Response::HTTP_NOT_FOUND);
+    }
 
-        if ($form->isSubmitted() && $form->isValid()) {
+    /**
+     * @Rest\Post("/city/new", name="_city")
+     *
+     * @return View
+     */
+    public function postAction(Request $request)
+    {
+        try {
+            $entity = new City();
+            $form = $this->createForm(get_class(new CityType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em = $this->getDoctrine()->getManager();
+                $em->persist($entity);
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+        } catch (Exception $e) {
+            return new View($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return new View("Error : Failed to add a new city", Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * @Rest\Put("/city/{id}", name="_city")
+     *
+     * @return View
+     */
+    public function putAction(Request $request, City $entity)
+    {
+       try {
             $em = $this->getDoctrine()->getManager();
-            $em->persist($city);
-            $em->flush();
-
-            return $this->redirectToRoute('city_show', array('id' => $city->getId()));
+            $id = $entity->getId();
+            $request->setMethod('PATCH');
+            $form = $this->createForm(get_class(new CityType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+            return new View("Error : Failed to edit the city " . $id , Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (\Exception $e) {
+            return new View("Error : City doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->render('city/new.html.twig', array(
-            'city' => $city,
-            'form' => $form->createView(),
-        ));
     }
 
     /**
-     * Finds and displays a city entity.
+     * @Rest\Patch("/city/{id}", name="_city")
      *
-     * @Route("/{id}", name="city_show")
-     * @Method("GET")
+     * @return View
      */
-    public function showAction(City $city)
+    public function patchAction(Request $request, City $entity)
     {
-        $deleteForm = $this->createDeleteForm($city);
-
-        return $this->render('city/show.html.twig', array(
-            'city' => $city,
-            'delete_form' => $deleteForm->createView(),
-        ));
+       return $this->putAction($request, $entity);
     }
 
     /**
-     * Displays a form to edit an existing city entity.
+     * @Rest\Delete("/city/{id}", name="_city")
      *
-     * @Route("/{id}/edit", name="city_edit")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function editAction(Request $request, City $city)
+    public function deleteAction(City $entity = null)
     {
-        $deleteForm = $this->createDeleteForm($city);
-        $editForm = $this->createForm('FrancoinBundle\Form\CityType', $city);
-        $editForm->handleRequest($request);
-
-        if ($editForm->isSubmitted() && $editForm->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
-
-            return $this->redirectToRoute('city_edit', array('id' => $city->getId()));
-        }
-
-        return $this->render('city/edit.html.twig', array(
-            'city' => $city,
-            'edit_form' => $editForm->createView(),
-            'delete_form' => $deleteForm->createView(),
-        ));
-    }
-
-    /**
-     * Deletes a city entity.
-     *
-     * @Route("/{id}", name="city_delete")
-     * @Method("DELETE")
-     */
-    public function deleteAction(Request $request, City $city)
-    {
-        $form = $this->createDeleteForm($city);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($entity) {
+            $id = $entity->getId();
             $em = $this->getDoctrine()->getManager();
-            $em->remove($city);
+            $em->remove($entity);
             $em->flush();
+            return new View("City " . $id . " has been deleted", Response::HTTP_OK);
+        } else {
+            return new View("Error : City doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->redirectToRoute('city_index');
-    }
-
-    /**
-     * Creates a form to delete a city entity.
-     *
-     * @param City $city The city entity
-     *
-     * @return \Symfony\Component\Form\Form The form
-     */
-    private function createDeleteForm(City $city)
-    {
-        return $this->createFormBuilder()
-            ->setAction($this->generateUrl('city_delete', array('id' => $city->getId())))
-            ->setMethod('DELETE')
-            ->getForm()
-        ;
     }
 }

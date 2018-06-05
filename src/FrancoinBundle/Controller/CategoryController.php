@@ -3,134 +3,113 @@
 namespace FrancoinBundle\Controller;
 
 use FrancoinBundle\Entity\Category;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;use Symfony\Component\HttpFoundation\Request;
+use FrancoinBundle\Form\CategoryType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use FOS\RestBundle\Controller\Annotations as Rest;
+use FrancoinBundle\Controller\RestController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use FOS\RestBundle\View\View;
 
-/**
- * Category controller.
- *
- * @Route("category")
- */
-class CategoryController extends Controller
+class CategoryController extends RestController
 {
     /**
-     * Lists all category entities.
+     * @Rest\Get("/category", name="_category")
      *
-     * @Route("/", name="category_index")
-     * @Method("GET")
+     * @return View
      */
     public function indexAction()
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $categories = $em->getRepository('FrancoinBundle:Category')->findAll();
-
-        return $this->render('category/index.html.twig', array(
-            'categories' => $categories,
-        ));
+        $entities = $this->getDoctrine()->getRepository('FrancoinBundle:Category')->findAll();
+        if ($entities === null) {
+            return new View("there are no Categorys exist", Response::HTTP_NOT_FOUND);
+        }
+        return new View($entities, Response::HTTP_OK);
     }
 
     /**
-     * Creates a new category entity.
+     * @Rest\Get("/category/{id}", name="_category")
      *
-     * @Route("/new", name="category_new")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function newAction(Request $request)
+    public function getAction(Category $entity = null)
     {
-        $category = new Category();
-        $form = $this->createForm('FrancoinBundle\Form\CategoryType', $category);
-        $form->handleRequest($request);
+        return ($entity) ? new View($entity, Response::HTTP_OK) : new View("Error : Category doesn't exist", Response::HTTP_NOT_FOUND);
+    }
 
-        if ($form->isSubmitted() && $form->isValid()) {
+    /**
+     * @Rest\Post("/category/new", name="_category")
+     *
+     * @return View
+     */
+    public function postAction(Request $request)
+    {
+        try {
+            $entity = new Category();
+            $form = $this->createForm(get_class(new CategoryType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em = $this->getDoctrine()->getManager();
+                $em->persist($entity);
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+        } catch (Exception $e) {
+            return new View($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return new View("Error : Failed to add a new category", Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * @Rest\Put("/category/{id}", name="_category")
+     *
+     * @return View
+     */
+    public function putAction(Request $request, Category $entity)
+    {
+       try {
             $em = $this->getDoctrine()->getManager();
-            $em->persist($category);
-            $em->flush();
-
-            return $this->redirectToRoute('category_show', array('id' => $category->getId()));
+            $id = $entity->getId();
+            $request->setMethod('PATCH');
+            $form = $this->createForm(get_class(new CategoryType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+            return new View("Error : Failed to edit the category " . $id , Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (\Exception $e) {
+            return new View("Error : Category doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->render('category/new.html.twig', array(
-            'category' => $category,
-            'form' => $form->createView(),
-        ));
     }
 
     /**
-     * Finds and displays a category entity.
+     * @Rest\Patch("/category/{id}", name="_category")
      *
-     * @Route("/{id}", name="category_show")
-     * @Method("GET")
+     * @return View
      */
-    public function showAction(Category $category)
+    public function patchAction(Request $request, Category $entity)
     {
-        $deleteForm = $this->createDeleteForm($category);
-
-        return $this->render('category/show.html.twig', array(
-            'category' => $category,
-            'delete_form' => $deleteForm->createView(),
-        ));
+       return $this->putAction($request, $entity);
     }
 
     /**
-     * Displays a form to edit an existing category entity.
+     * @Rest\Delete("/category/{id}", name="_category")
      *
-     * @Route("/{id}/edit", name="category_edit")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function editAction(Request $request, Category $category)
+    public function deleteAction(Category $entity = null)
     {
-        $deleteForm = $this->createDeleteForm($category);
-        $editForm = $this->createForm('FrancoinBundle\Form\CategoryType', $category);
-        $editForm->handleRequest($request);
-
-        if ($editForm->isSubmitted() && $editForm->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
-
-            return $this->redirectToRoute('category_edit', array('id' => $category->getId()));
-        }
-
-        return $this->render('category/edit.html.twig', array(
-            'category' => $category,
-            'edit_form' => $editForm->createView(),
-            'delete_form' => $deleteForm->createView(),
-        ));
-    }
-
-    /**
-     * Deletes a category entity.
-     *
-     * @Route("/{id}", name="category_delete")
-     * @Method("DELETE")
-     */
-    public function deleteAction(Request $request, Category $category)
-    {
-        $form = $this->createDeleteForm($category);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($entity) {
+            $id = $entity->getId();
             $em = $this->getDoctrine()->getManager();
-            $em->remove($category);
+            $em->remove($entity);
             $em->flush();
+            return new View("Category " . $id . " has been deleted", Response::HTTP_OK);
+        } else {
+            return new View("Error : Category doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->redirectToRoute('category_index');
-    }
-
-    /**
-     * Creates a form to delete a category entity.
-     *
-     * @param Category $category The category entity
-     *
-     * @return \Symfony\Component\Form\Form The form
-     */
-    private function createDeleteForm(Category $category)
-    {
-        return $this->createFormBuilder()
-            ->setAction($this->generateUrl('category_delete', array('id' => $category->getId())))
-            ->setMethod('DELETE')
-            ->getForm()
-        ;
     }
 }

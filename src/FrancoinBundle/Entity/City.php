@@ -29,6 +29,13 @@ class City
     private $name;
 
     /**
+     * @var integer
+     *
+     * @ORM\Column(name="zipcode", type="integer", nullable=false)
+     */
+    private $zipcode;
+
+    /**
      * @var \FrancoinBundle\Entity\Region
      *
      * @ORM\ManyToOne(targetEntity="FrancoinBundle\Entity\Region")
@@ -72,6 +79,30 @@ class City
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     * Set zipcode
+     *
+     * @param integer $zipcode
+     *
+     * @return City
+     */
+    public function setZipcode($zipcode)
+    {
+        $this->zipcode = $zipcode;
+
+        return $this;
+    }
+
+    /**
+     * Get zipcode
+     *
+     * @return integer
+     */
+    public function getZipcode()
+    {
+        return $this->zipcode;
     }
 
     /**

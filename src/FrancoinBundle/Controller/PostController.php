@@ -3,134 +3,113 @@
 namespace FrancoinBundle\Controller;
 
 use FrancoinBundle\Entity\Post;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;use Symfony\Component\HttpFoundation\Request;
+use FrancoinBundle\Form\PostType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use FOS\RestBundle\Controller\Annotations as Rest;
+use FrancoinBundle\Controller\RestController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use FOS\RestBundle\View\View;
 
-/**
- * Post controller.
- *
- * @Route("post")
- */
-class PostController extends Controller
+class PostController extends RestController
 {
     /**
-     * Lists all post entities.
+     * @Rest\Get("/post", name="_post")
      *
-     * @Route("/", name="post_index")
-     * @Method("GET")
+     * @return View
      */
     public function indexAction()
     {
-        $em = $this->getDoctrine()->getManager();
-
-        $posts = $em->getRepository('FrancoinBundle:Post')->findAll();
-
-        return $this->render('post/index.html.twig', array(
-            'posts' => $posts,
-        ));
+        $entities = $this->getDoctrine()->getRepository('FrancoinBundle:Post')->findAll();
+        if ($entities === null) {
+            return new View("there are no Posts exist", Response::HTTP_NOT_FOUND);
+        }
+        return new View($entities, Response::HTTP_OK);
     }
 
     /**
-     * Creates a new post entity.
+     * @Rest\Get("/post/{id}", name="_post")
      *
-     * @Route("/new", name="post_new")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function newAction(Request $request)
+    public function getAction(Post $entity = null)
     {
-        $post = new Post();
-        $form = $this->createForm('FrancoinBundle\Form\PostType', $post);
-        $form->handleRequest($request);
+        return ($entity) ? new View($entity, Response::HTTP_OK) : new View("Error : Post doesn't exist", Response::HTTP_NOT_FOUND);
+    }
 
-        if ($form->isSubmitted() && $form->isValid()) {
+    /**
+     * @Rest\Post("/post/new", name="_post")
+     *
+     * @return View
+     */
+    public function postAction(Request $request)
+    {
+        try {
+            $entity = new Post();
+            $form = $this->createForm(get_class(new PostType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em = $this->getDoctrine()->getManager();
+                $em->persist($entity);
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+        } catch (Exception $e) {
+            return new View($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return new View("Error : Failed to add a new post", Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * @Rest\Put("/post/{id}", name="_post")
+     *
+     * @return View
+     */
+    public function putAction(Request $request, Post $entity)
+    {
+       try {
             $em = $this->getDoctrine()->getManager();
-            $em->persist($post);
-            $em->flush();
-
-            return $this->redirectToRoute('post_show', array('id' => $post->getId()));
+            $id = $entity->getId();
+            $request->setMethod('PATCH');
+            $form = $this->createForm(get_class(new PostType()), $entity, array("method" => $request->getMethod()));
+            $this->removeExtraFields($request, $form);
+            $form->handleRequest($request);
+            if ($form->isValid()) {
+                $em->flush();
+                return new View($entity, Response::HTTP_OK);
+            }
+            return new View("Error : Failed to edit the post " . $id , Response::HTTP_INTERNAL_SERVER_ERROR);
+        } catch (\Exception $e) {
+            return new View("Error : Post doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->render('post/new.html.twig', array(
-            'post' => $post,
-            'form' => $form->createView(),
-        ));
     }
 
     /**
-     * Finds and displays a post entity.
+     * @Rest\Patch("/post/{id}", name="_post")
      *
-     * @Route("/{id}", name="post_show")
-     * @Method("GET")
+     * @return View
      */
-    public function showAction(Post $post)
+    public function patchAction(Request $request, Post $entity)
     {
-        $deleteForm = $this->createDeleteForm($post);
-
-        return $this->render('post/show.html.twig', array(
-            'post' => $post,
-            'delete_form' => $deleteForm->createView(),
-        ));
+       return $this->putAction($request, $entity);
     }
 
     /**
-     * Displays a form to edit an existing post entity.
+     * @Rest\Delete("/post/{id}", name="_post")
      *
-     * @Route("/{id}/edit", name="post_edit")
-     * @Method({"GET", "POST"})
+     * @return View
      */
-    public function editAction(Request $request, Post $post)
+    public function deleteAction(Post $entity = null)
     {
-        $deleteForm = $this->createDeleteForm($post);
-        $editForm = $this->createForm('FrancoinBundle\Form\PostType', $post);
-        $editForm->handleRequest($request);
-
-        if ($editForm->isSubmitted() && $editForm->isValid()) {
-            $this->getDoctrine()->getManager()->flush();
-
-            return $this->redirectToRoute('post_edit', array('id' => $post->getId()));
-        }
-
-        return $this->render('post/edit.html.twig', array(
-            'post' => $post,
-            'edit_form' => $editForm->createView(),
-            'delete_form' => $deleteForm->createView(),
-        ));
-    }
-
-    /**
-     * Deletes a post entity.
-     *
-     * @Route("/{id}", name="post_delete")
-     * @Method("DELETE")
-     */
-    public function deleteAction(Request $request, Post $post)
-    {
-        $form = $this->createDeleteForm($post);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($entity) {
+            $id = $entity->getId();
             $em = $this->getDoctrine()->getManager();
-            $em->remove($post);
+            $em->remove($entity);
             $em->flush();
+            return new View("Post " . $id . " has been deleted", Response::HTTP_OK);
+        } else {
+            return new View("Error : Post doesn't exist", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return $this->redirectToRoute('post_index');
-    }
-
-    /**
-     * Creates a form to delete a post entity.
-     *
-     * @param Post $post The post entity
-     *
-     * @return \Symfony\Component\Form\Form The form
-     */
-    private function createDeleteForm(Post $post)
-    {
-        return $this->createFormBuilder()
-            ->setAction($this->generateUrl('post_delete', array('id' => $post->getId())))
-            ->setMethod('DELETE')
-            ->getForm()
-        ;
     }
 }
