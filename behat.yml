@@ -1,0 +1,18 @@
+default:
+    autoload: features
+    extensions:
+        Behat\Symfony2Extension:
+            kernel:
+                bootstrap: ""
+        Behat\MinkExtension:
+            base_url: http://localhost:8080
+            browser_name: 'chrome'
+            sessions:
+                my_session:
+                    selenium2: ~
+    suites:
+        francoin_suite:
+            contexts:
+                - Context\FeatureContext
+            type: symfony_bundle
+            bundle: 'FrancoinBundle'
