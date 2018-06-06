@@ -5,14 +5,21 @@ default:
             kernel:
                 bootstrap: ""
         Behat\MinkExtension:
-            base_url: http://localhost:8080
-            browser_name: 'chrome'
+            base_url: http://google.fr
+            browser_name: chrome
+            goutte : ~
             sessions:
-                my_session:
-                    selenium2: ~
+                javascript:
+                    selenium2:
+                        wd_host: http://localhost:4444/wd/hub
+                        capabilities:
+                            marionette: true
+                            browser: chrome
     suites:
         francoin_suite:
             contexts:
                 - Context\FeatureContext
+                - Context\TestContext
+                - Context\WebContext
             type: symfony_bundle
             bundle: 'FrancoinBundle'
