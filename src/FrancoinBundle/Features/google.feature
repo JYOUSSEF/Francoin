@@ -8,8 +8,8 @@ Feature: Google
   @javascript
   Scenario: Search
   	Given I am on the homepage
-  	And I wait 5 seconds
+  	And I wait 1 seconds
   	When I fill in "lst-ib" with "Grafikart"
     And I press "btnK"
-  	And I wait 4 seconds
+  	And I wait 1 seconds
     Then I should see "Grafikart.fr"

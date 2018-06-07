@@ -16,21 +16,21 @@ use Behat\Mink\Exception\ElementNotFoundException;
  */
 class WebContext extends MinkContext implements SnippetAcceptingContext
 {
-    
+
     /**
-     * @When I fill :arg1 with :arg2
+     * @When I wait :seconds seconds
      */
-    public function iFillWith($arg1, $arg2)
+    public function iWaitSeconds($seconds)
     {
-        //throw new PendingException();
+        $this->getSession()->wait($seconds * 1000);
     }
 
     /**
-     * @When I wait :arg1 seconds
+     * @Then the response status code should be :code
      */
-    public function iWaitSeconds($arg1)
+    public function theResponseStatusCodeShouldBe($code)
     {
-        $this->getSession()->wait($arg1 * 1000);
+        $this->assertSession()->statusCodeEquals($code);
     }
 
 }
