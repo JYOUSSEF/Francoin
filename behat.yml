@@ -15,11 +15,19 @@ default:
                         capabilities:
                             marionette: true
                             browser: chrome
+        Behatch\Extension: ~
     suites:
         francoin_suite:
             contexts:
                 - Context\FeatureContext
                 - Context\TestContext
                 - Context\WebContext
+                - behatch:context:browser
+                - behatch:context:debug
+                - behatch:context:system
+                - behatch:context:json
+                - behatch:context:table
+                - behatch:context:rest
+                - behatch:context:xml
             type: symfony_bundle
             bundle: 'FrancoinBundle'

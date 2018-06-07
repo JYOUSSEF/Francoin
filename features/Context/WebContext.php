@@ -18,14 +18,6 @@ class WebContext extends MinkContext implements SnippetAcceptingContext
 {
 
     /**
-     * @When I wait :seconds seconds
-     */
-    public function iWaitSeconds($seconds)
-    {
-        $this->getSession()->wait($seconds * 1000);
-    }
-
-    /**
      * @Then the response status code should be :code
      */
     public function theResponseStatusCodeShouldBe($code)
