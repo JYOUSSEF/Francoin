@@ -10,3 +10,13 @@ Feature: Checking User Controller
   	Given I am on the homepage
   	When I go to "http://localhost:8000/api/user"
     Then the response should be in JSON
+    Then the header "Content-Type" should be equal to "application/json"
+
+  Scenario: Checking the response type of the cities list
+  	Given I am on the homepage
+  	When I go to "http://localhost:8000/api/city"
+    Then the response should be in JSON
+    And the JSON should be equal to: 
+    """
+	  []
+	"""
