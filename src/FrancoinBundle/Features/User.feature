@@ -1,25 +1,11 @@
 Feature: Checking User Controller
   Testing the User Rest Controller "/api/user"
- 
-  Scenario: Checking the status code of the user's list
-  	Given I am on the homepage
-  	When I go to "http://localhost:8000/api/user"
-    Then the response status code should be "200"
 
   Scenario: Checking the response type of the user's list
-  	Given I am on the homepage
-  	When I go to "http://localhost:8000/api/user"
+  	Given I send a "GET" request to "http://localhost:8000/api/user"
     Then the response should be in JSON
     Then the header "Content-Type" should be equal to "application/json"
-
-  Scenario: Checking the response type of the cities list
-  	Given I am on the homepage
-  	When I go to "http://localhost:8000/api/city"
-    Then the response should be in JSON
-    And the JSON should be equal to: 
-    """
-	  []
-	"""
+    Then the response status code should be "200"
 
   Scenario: Testing the url to add new User
   	Given I send a "POST" request to "http://localhost:8000/api/user/new" with body:
@@ -39,10 +25,10 @@ Feature: Checking User Controller
 	Then the header "Content-Type" should be equal to "application/json"
 	Then the response status code should be "200"
 	Then the JSON node "id" should exist
-	And I save it into "UID"
+	And I save it into "ID"
 
   Scenario: Testing the url to get a User
-  	Given I send a "GET" request to "http://localhost:8000/api/user/<<UID>>"
+  	Given I send a "GET" request to "http://localhost:8000/api/user/<<ID>>"
   	Then the response should be in JSON
 	Then the header "Content-Type" should be equal to "application/json"
 	Then the response status code should be "200"
@@ -50,7 +36,7 @@ Feature: Checking User Controller
 	Then the JSON should be equal to:
 	"""
 	{
-		"id": <<UID>>,
+		"id": <<ID>>,
 		"username": "test",
 		"username_canonical": "test",
 		"email": "test@gmail.com",
@@ -66,7 +52,7 @@ Feature: Checking User Controller
 	"""
 
   Scenario: Testing the url to update a User
-  	Given I send a "PUT" request to "http://localhost:8000/api/user/<<UID>>" with body:
+  	Given I send a "PUT" request to "http://localhost:8000/api/user/<<ID>>" with body:
 	"""
 	{
 	    "adresse": "27 rue leon fontaine, 95210"
@@ -79,7 +65,7 @@ Feature: Checking User Controller
 	Then the JSON should be equal to:
 	"""
 	{
-		"id": <<UID>>,
+		"id": <<ID>>,
 		"username": "test",
 		"username_canonical": "test",
 		"email": "test@gmail.com",
@@ -95,7 +81,7 @@ Feature: Checking User Controller
 	"""
 
   Scenario: Testing the url to delete a User
-  	Given I send a "DELETE" request to "http://localhost:8000/api/user/<<UID>>"
+  	Given I send a "DELETE" request to "http://localhost:8000/api/user/<<ID>>"
 	Then the response should be in JSON
 	Then the header "Content-Type" should be equal to "application/json"
 	Then the response status code should be "200"
