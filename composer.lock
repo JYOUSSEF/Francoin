@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "063ce6cc5351e077ced571d668757551",
+    "content-hash": "e6a6ac115e6231e80b6a0a1c8c2cae0a",
     "packages": [
         {
             "name": "composer/ca-bundle",
@@ -4017,6 +4017,45 @@
                 "response"
             ],
             "time": "2016-08-06T14:39:51+00:00"
+        },
+        {
+            "name": "rdx/behat-variables",
+            "version": "1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/rudiedirkx/behat-variables.git",
+                "reference": "3729c7aec18cf4a4ce1a0faacc8da3fc0dc9354a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/rudiedirkx/behat-variables/zipball/3729c7aec18cf4a4ce1a0faacc8da3fc0dc9354a",
+                "reference": "3729c7aec18cf4a4ce1a0faacc8da3fc0dc9354a",
+                "shasum": ""
+            },
+            "require": {
+                "behat/behat": "^3.0"
+            },
+            "require-dev": {
+                "symfony/process": "^2.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "rdx\\behatvars\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Rudie Dirkx",
+                    "email": "github@hotblocks.nl"
+                }
+            ],
+            "description": "Store variables across Scenarios during Behat testing",
+            "time": "2017-11-16T11:58:21+00:00"
         },
         {
             "name": "sensio/generator-bundle",

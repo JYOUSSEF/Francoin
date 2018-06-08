@@ -15,7 +15,7 @@ use Behat\Mink\Exception\ElementNotFoundException;
  * Defines application features from the specific context.
  */
 class WebContext extends MinkContext implements SnippetAcceptingContext
-{
+{   
 
     /**
      * @Then the response status code should be :code

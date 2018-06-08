@@ -11,6 +11,7 @@ use Behat\Gherkin\Node\TableNode;
  */
 class FeatureContext implements Context
 {
+    
     /**
      * Initializes context.
      *
@@ -21,4 +22,5 @@ class FeatureContext implements Context
     public function __construct()
     {
     }
+    
 }
